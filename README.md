@@ -5,25 +5,26 @@ CogniTube AI is a Streamlit app that answers questions from a YouTube video's tr
 ## Features
 
 - Accepts a YouTube URL or video ID
-- Fetches the English transcript
+- Fetches English or Hindi transcripts
 - Splits transcript text into chunks
 - Builds a FAISS vector store
-- Answers questions using Hugging Face hosted inference
+- Uses local hash embeddings for transcript retrieval
+- Answers questions using Hugging Face chat inference
 
 ## Project Structure
 
 ```text
 .
-├── src/
-│   └── cognitube_ai/
-│       ├── __init__.py
-│       ├── app.py
-│       └── backend.py
-├── streamlit_app.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
+|-- src/
+|   `-- cognitube_ai/
+|       |-- __init__.py
+|       |-- app.py
+|       `-- backend.py
+|-- streamlit_app.py
+|-- requirements.txt
+|-- .env.example
+|-- .gitignore
+`-- README.md
 ```
 
 ## Setup
@@ -57,7 +58,8 @@ streamlit run streamlit_app.py
 
 | Variable | Description |
 | --- | --- |
-| `HUGGINGFACEHUB_API_TOKEN` | Hugging Face access token used by LangChain's Hugging Face endpoint |
+| `HUGGINGFACEHUB_API_TOKEN` | Hugging Face access token used for answer generation |
+| `HUGGINGFACE_MODEL` | Optional Hugging Face text generation model ID |
 | `YOUTUBE_PROXY_URL` | Optional proxy URL for transcript fetching when YouTube blocks your current IP |
 
 `HF_TOKEN` is also supported if you already use that variable name locally.

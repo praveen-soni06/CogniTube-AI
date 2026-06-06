@@ -1,14 +1,11 @@
 import streamlit as st
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
 
 from cognitube_ai.backend import (
     build_vector_store,
     extract_video_id,
-    get_llm,
+    generate_answer,
     get_transcript,
     has_huggingface_token,
-    parser,
 )
 
 
@@ -16,94 +13,93 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
+def build_prompt(context, question):
+    return f"""
+You are a helpful assistant.
+Answer ONLY from the provided transcript context.
+If the context is insufficient, say "I don't know."
 
-# -------------------- MAIN --------------------
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+""".strip()
+
+
 def main():
-
     st.set_page_config(page_title="YouTube RAG Chatbot", layout="centered")
-    st.title("🤖 YouTube RAG Chatbot")
+    st.title("YouTube RAG Chatbot")
 
-#-------------------Video Transcript Generate-----------------------
     video_input = st.text_input("Enter YouTube URL or Video ID:")
 
-    if st.button('Collect Transcript'):
+    collect_clicked = st.button(
+        "Collect Transcript",
+        type="primary",
+        use_container_width=True,
+    )
 
+    if collect_clicked:
         if not video_input:
-            st.warning("Please enter Video URL.")
+            st.warning("Please enter a YouTube URL or video ID.")
             st.stop()
 
         video_id = extract_video_id(video_input)
 
-        with st.spinner("📥 Fetching transcript..."):
-            try:
-                transcript = get_transcript(video_id)
-            except Exception as e:
-                st.error(f'Error fetching transcript: {e}')
-                st.stop()
+        with st.spinner("Fetching transcript..."):
+            transcript = get_transcript(video_id)
 
-        if transcript:
+        if not transcript:
+            st.stop()
+
+        with st.spinner("Processing transcript..."):
             try:
                 st.session_state.vector_store = build_vector_store(transcript)
-                st.success("✅ Transcript processed successfully!")
-            except Exception as e:
-                st.error(f"Error building vector store: {e}")
+                st.session_state.video_id = video_id
+            except Exception as exc:
+                st.error(f"Could not process transcript: {exc}")
+                st.stop()
 
-        if "vector_store" in st.session_state:
-            st.success("📚 Transcript Ready")
+        st.success("Transcript processed successfully.")
 
-#--------------User Query---------------------
+    if "vector_store" in st.session_state:
+        video_id = st.session_state.get("video_id", "selected video")
+        st.success(f"Transcript ready for {video_id}.")
+
     question = st.text_input("Ask your question:")
 
     if st.button("Submit"):
-
         if not question.strip():
-            st.warning('⚠️ Please enter a question.')
+            st.warning("Please enter a question.")
             st.stop()
 
-        if 'vector_store' not in st.session_state:
-            st.warning('⚠️ Please collect transcript first.')
+        if "vector_store" not in st.session_state:
+            st.warning("Please collect transcript first.")
+            st.stop()
+
+        if not has_huggingface_token():
+            st.error("Add HUGGINGFACEHUB_API_TOKEN to your .env file before asking a question.")
             st.stop()
 
         retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 6})
+        docs = retriever.invoke(question)
+        prompt = build_prompt(format_docs(docs), question)
 
-        prompt = PromptTemplate(
-            template="""
-    You are a helpful assistant.
-    Answer ONLY from the provided transcript context.
-    If the context is insufficient, say "I don't know."
-
-    Context:
-    {context}
-
-    Question:
-    {question}
-
-    Answer:
-    """,
-            input_variables=["context", "question"],
-        )
-
-        parallel_chain = RunnableParallel(
-            {
-                "context": retriever | RunnableLambda(format_docs),
-                "question": RunnablePassthrough(),
-            }
-        )
-
-        if 'llm' not in st.session_state:
-            st.session_state.llm = get_llm()
-
-        rag_chain = parallel_chain | prompt | st.session_state.llm | parser
-
-        with st.spinner("🤖 Thinking..."):
+        with st.spinner("Thinking..."):
             try:
-                answer = rag_chain.invoke(question)
-                st.subheader("🤖 Answer:")
-                st.write(answer)
+                answer = generate_answer(prompt)
+            except Exception as exc:
+                st.error(
+                    "Could not generate the answer with Hugging Face. "
+                    "Check your token, model, provider availability, or internet connection."
+                )
+                st.caption(str(exc))
+                st.stop()
 
-            except Exception as e:
-                st.error(f'Error generating answer: {e}')
-
+        st.subheader("Answer:")
+        st.write(answer)
 
 
 if __name__ == "__main__":
