@@ -25,9 +25,6 @@ def has_huggingface_token():
     return bool(get_huggingface_token())
 
 
-def get_youtube_proxy_url():
-    return os.getenv("YOUTUBE_PROXY_URL")
-
 
 @st.cache_resource
 def get_llm():
@@ -42,26 +39,11 @@ def get_llm():
 
 
 def extract_video_id(url_or_id):
-    """Extract a YouTube video ID from a URL, or return the input ID."""
-    value = url_or_id.strip()
-
-    if "youtube.com" not in value and "youtu.be" not in value:
-        return value
-
-    parsed = urlparse(value)
-
-    if "youtu.be" in parsed.netloc:
-        return parsed.path.strip("/").split("/")[0]
-
-    query_video_id = parse_qs(parsed.query).get("v")
-    if query_video_id:
-        return query_video_id[0]
-
-    path_parts = [part for part in parsed.path.split("/") if part]
-    if len(path_parts) >= 2 and path_parts[0] in {"embed", "shorts", "live"}:
-        return path_parts[1]
-
-    return value
+    """Extract ID from full URL or return ID if already given"""
+    if "youtube.com" in url_or_id or "youtu.be" in url_or_id:
+        parsed = urlparse(url_or_id)
+        return parse_qs(parsed.query).get("v", [url_or_id])[0]
+    return url_or_id
 
 
 @st.cache_resource
@@ -91,16 +73,13 @@ def get_transcript(video_id):
         return transcript
 
     except IpBlocked:
-        st.error(
-            "YouTube blocked this IP/network. Try another network, or set "
-            "YOUTUBE_PROXY_URL in your .env file."
-        )
+        st.error("🚫 IP blocked by YouTube. Try mobile hotspot or wait.")
         return None
 
     except TranscriptsDisabled:
-        st.error("No captions are available for this video.")
+        st.error("❌ No captions are available for this video.")
         return None
 
-    except Exception as exc:
-        st.error(f"Error: {exc}")
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
         return None

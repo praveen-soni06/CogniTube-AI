@@ -16,68 +16,94 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
 
-def main():
-    st.set_page_config(page_title="YouTube RAG Chatbot", layout="centered")
-    st.title("YouTube RAG Chatbot")
 
+# -------------------- MAIN --------------------
+def main():
+
+    st.set_page_config(page_title="YouTube RAG Chatbot", layout="centered")
+    st.title("🤖 YouTube RAG Chatbot")
+
+#-------------------Video Transcript Generate-----------------------
     video_input = st.text_input("Enter YouTube URL or Video ID:")
+
+    if st.button('Collect Transcript'):
+
+        if not video_input:
+            st.warning("Please enter Video URL.")
+            st.stop()
+
+        video_id = extract_video_id(video_input)
+
+        with st.spinner("📥 Fetching transcript..."):
+            try:
+                transcript = get_transcript(video_id)
+            except Exception as e:
+                st.error(f'Error fetching transcript: {e}')
+                st.stop()
+
+        if transcript:
+            try:
+                st.session_state.vector_store = build_vector_store(transcript)
+                st.success("✅ Transcript processed successfully!")
+            except Exception as e:
+                st.error(f"Error building vector store: {e}")
+
+        if "vector_store" in st.session_state:
+            st.success("📚 Transcript Ready")
+
+#--------------User Query---------------------
     question = st.text_input("Ask your question:")
 
-    if not st.button("Submit"):
-        return
+    if st.button("Submit"):
 
-    if not video_input or not question:
-        st.warning("Please enter both Video ID/URL and Question.")
-        st.stop()
+        if not question.strip():
+            st.warning('⚠️ Please enter a question.')
+            st.stop()
 
-    if not has_huggingface_token():
-        st.error("Add HUGGINGFACEHUB_API_TOKEN to your .env file before running the app.")
-        st.stop()
+        if 'vector_store' not in st.session_state:
+            st.warning('⚠️ Please collect transcript first.')
+            st.stop()
 
-    video_id = extract_video_id(video_input)
+        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 6})
 
-    with st.spinner("Fetching transcript..."):
-        transcript = get_transcript(video_id)
+        prompt = PromptTemplate(
+            template="""
+    You are a helpful assistant.
+    Answer ONLY from the provided transcript context.
+    If the context is insufficient, say "I don't know."
 
-    if not transcript:
-        st.stop()
+    Context:
+    {context}
 
-    with st.spinner("Processing transcript..."):
-        vector_store = build_vector_store(transcript)
+    Question:
+    {question}
 
-    retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+    Answer:
+    """,
+            input_variables=["context", "question"],
+        )
 
-    prompt = PromptTemplate(
-        template="""
-You are a helpful assistant.
-Answer ONLY from the provided transcript context.
-If the context is insufficient, say "I don't know."
+        parallel_chain = RunnableParallel(
+            {
+                "context": retriever | RunnableLambda(format_docs),
+                "question": RunnablePassthrough(),
+            }
+        )
 
-Context:
-{context}
+        if 'llm' not in st.session_state:
+            st.session_state.llm = get_llm()
 
-Question:
-{question}
+        rag_chain = parallel_chain | prompt | st.session_state.llm | parser
 
-Answer:
-""",
-        input_variables=["context", "question"],
-    )
+        with st.spinner("🤖 Thinking..."):
+            try:
+                answer = rag_chain.invoke(question)
+                st.subheader("🤖 Answer:")
+                st.write(answer)
 
-    parallel_chain = RunnableParallel(
-        {
-            "context": retriever | RunnableLambda(format_docs),
-            "question": RunnablePassthrough(),
-        }
-    )
+            except Exception as e:
+                st.error(f'Error generating answer: {e}')
 
-    rag_chain = parallel_chain | prompt | get_llm() | parser
-
-    with st.spinner("Thinking..."):
-        answer = rag_chain.invoke(question)
-
-    st.subheader("Answer:")
-    st.write(answer)
 
 
 if __name__ == "__main__":
