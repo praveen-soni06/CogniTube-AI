@@ -8,6 +8,7 @@ from langchain_community.llms import HuggingFaceEndpoint
 from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from youtube_transcript_api.proxies import GenericProxyConfig
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from youtube_transcript_api._errors import IpBlocked
 
@@ -22,6 +23,10 @@ def get_huggingface_token():
 
 def has_huggingface_token():
     return bool(get_huggingface_token())
+
+
+def get_youtube_proxy_url():
+    return os.getenv("YOUTUBE_PROXY_URL")
 
 
 @st.cache_resource
@@ -77,7 +82,7 @@ def get_transcript(video_id):
     """Fetch an English transcript for a YouTube video."""
     try:
         ytt_api = YouTubeTranscriptApi()
-        transcript_list = ytt_api.fetch(video_id, languages=["en"])
+        transcript_list = ytt_api.fetch(video_id, languages=["en",'hi'])
         transcript = " ".join(chunk.text for chunk in transcript_list)
 
         if len(transcript) < 50:
@@ -86,7 +91,10 @@ def get_transcript(video_id):
         return transcript
 
     except IpBlocked:
-        st.error("YouTube blocked this IP. Try a mobile hotspot or wait before retrying.")
+        st.error(
+            "YouTube blocked this IP/network. Try another network, or set "
+            "YOUTUBE_PROXY_URL in your .env file."
+        )
         return None
 
     except TranscriptsDisabled:

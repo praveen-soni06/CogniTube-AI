@@ -58,5 +58,12 @@ streamlit run streamlit_app.py
 | Variable | Description |
 | --- | --- |
 | `HUGGINGFACEHUB_API_TOKEN` | Hugging Face access token used by LangChain's Hugging Face endpoint |
+| `YOUTUBE_PROXY_URL` | Optional proxy URL for transcript fetching when YouTube blocks your current IP |
 
 `HF_TOKEN` is also supported if you already use that variable name locally.
+
+Example proxy format:
+
+```text
+YOUTUBE_PROXY_URL=http://username:password@host:port
+```
