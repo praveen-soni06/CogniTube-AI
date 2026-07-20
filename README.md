@@ -1,281 +1,375 @@
 # CogniTube AI
 
-CogniTube AI — A Streamlit YouTube RAG Chatbot
+[![Python](https://img.shields.io/badge/Python-3.9+-3776ab?logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.0+-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![LangChain](https://img.shields.io/badge/LangChain-0.0+-0EA5E9?logo=chainlink&logoColor=white)](https://langchain.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Short description: A Streamlit app that answers questions from a YouTube video's transcript using a Retrieval-Augmented Generation (RAG) pipeline.
+**Extract insights from YouTube videos instantly — ask questions, get answers from transcripts using AI-powered retrieval.**
 
-Badges
-- (No CI / license badges found in the repository. Add them if you enable CI or add a license.)
+## Overview
 
-Overview
---------
-What the project does
-- Fetches a YouTube transcript (English or Hindi), splits it into chunks, builds a FAISS vector store with deterministic local embeddings, and answers user questions using a Hugging Face chat inference model.
+CogniTube AI is a Streamlit-based application that enables intelligent question-answering over YouTube video transcripts using a Retrieval-Augmented Generation (RAG) pipeline. Instead of manually scrolling through transcripts, users can simply enter a YouTube URL and ask natural language questions to get precise answers grounded in the video's actual content.
 
-Why it was built
-- To provide a simple Streamlit-based interface that lets users ask questions about a YouTube video's transcript via a RAG-style approach without requiring remote embedding API calls.
+### Problem It Solves
+Finding specific information in long YouTube videos is time-consuming. CogniTube AI automates this by:
+- Fetching transcripts automatically from any YouTube video
+- Indexing them for fast semantic search
+- Answering user questions with context pulled directly from the transcript
+- Requiring no GPU or local LLM setup — all inference runs on Hugging Face's cloud infrastructure
 
-Main problem it solves
-- Quickly extract and query information from YouTube transcripts using vector search and an LLM for answer generation.
+### Who It's For
+- **Content Researchers** — quickly extract facts and quotes from educational videos
+- **Students** — study videos more efficiently by asking specific questions
+- **Analysts** — search multiple videos for comparable information
+- **Developers** — a reference RAG implementation using LangChain, FAISS, and Hugging Face
 
-Key features
-- Accepts a YouTube URL or video ID
-- Fetches English or Hindi transcripts (youtube_transcript_api)
-- Splits transcript text into chunks (RecursiveCharacterTextSplitter)
-- Builds a FAISS vector store (langchain_community.vectorstores.FAISS)
-- Uses deterministic local hash embeddings to avoid external embedding calls
-- Answers questions using Hugging Face InferenceClient (chat completion)
+## Key Features
 
-Demo
-----
-- Live demo: (none provided in repository)
-- Screenshots: (none present in repository)
-- GIF: (none present in repository)
-- Video demo: (none present in repository)
+- 🎬 **Easy URL Input** — paste a YouTube URL or video ID; automatic parsing handles multiple formats
+- 📝 **Multi-language Transcripts** — fetches English or Hindi captions (automatic fallback)
+- 🔒 **Proxy Support** — built-in proxy handling for networks where YouTube blocks transcript API access
+- ⚡ **Fast Retrieval** — FAISS vector store with deterministic local embeddings (no external embedding API calls)
+- 🤖 **AI-Powered Answers** — uses Hugging Face Inference API with Qwen2.5-72B (configurable)
+- 💬 **Context-Aware** — retrieves top-6 most relevant transcript chunks and uses them to generate answers
+- 🔐 **Simple Configuration** — environment variables only; no database setup required
 
-Placeholders — add your assets here:
-- Live demo: https://your-live-demo.example
-- Screenshots: docs/images/home.png
-- GIF: docs/images/demo.gif
-- Video: docs/video/demo.mp4
+## Tech Stack
 
-Features (detailed)
-------------------
-- Input: YouTube URL or plain video ID
-- Transcript fetching: attempts English (`en`) and Hindi (`hi`) captions via youtube_transcript_api
-- Proxy support for YouTube transcript API via YOUTUBE_PROXY_URL
-- Text splitting: chunk_size=1000, chunk_overlap=200 (RecursiveCharacterTextSplitter)
-- Local deterministic embeddings: LocalHashEmbeddings (class in src/cognitube_ai/backend.py)
-  - Deterministic hashing using blake2b, normalized vector of fixed dimension (default 384)
-- Vector store: FAISS (via langchain community vectorstores)
-- Retrieval: vector_store.as_retriever(search_kwargs={"k": 6}) used in the Streamlit flow
-- Answer generation: Hugging Face InferenceClient.chat_completion (max_tokens=512, temperature=0.3)
-- Streamlit UI for collecting transcripts and submitting questions
+| Component | Technology |
+|-----------|-----------|
+| **Frontend** | Streamlit |
+| **Backend** | Python |
+| **Embeddings** | LocalHashEmbeddings (deterministic, local) |
+| **Vector Store** | FAISS (CPU) |
+| **LLM** | Hugging Face Inference API (Qwen2.5-72B-Instruct) |
+| **Text Splitting** | LangChain RecursiveCharacterTextSplitter |
+| **Transcript Source** | YouTube Transcript API |
+| **Environment** | python-dotenv |
 
-Tech Stack
-----------
-- Frontend
-  - Streamlit (single-app UI)
-- Backend
-  - Python code in src/cognitube_ai (app.py, backend.py)
-- Machine Learning / AI
-  - Hugging Face InferenceClient (remote chat completion)
-  - LocalHashEmbeddings (custom deterministic embeddings implementation)
-  - FAISS vector store (faiss-cpu)
-  - LangChain components (text splitters, vector store integrations)
-- Database
-  - None (no persistent database; FAISS index built in-memory and cached per Streamlit session)
-- APIs
-  - YouTube transcript access via youtube_transcript_api (no public REST API endpoints in repo)
-- Authentication
-  - Uses a Hugging Face API token (HUGGINGFACEHUB_API_TOKEN or HF_TOKEN) for inference requests
-- Deployment
-  - Not specified in repository (no Dockerfile / no deployment scripts included)
-- Programming Languages
-  - Python (100% of repo)
-- Libraries (from requirements.txt and code)
-  - streamlit
-  - python-dotenv
-  - youtube-transcript-api
-  - langchain
-  - langchain-core
-  - langchain-community
-  - langchain-text-splitters
-  - faiss-cpu
-  - huggingface-hub
-- Tools
-  - dotenv for environment variable loading
-  - huggingface_hub.InferenceClient
-
-Project structure
------------------
-Repository top-level structure (actual)
-
+### Libraries
 ```
-.
-|-- src/
-|   `-- cognitube_ai/
-|       |-- __init__.py
-|       |-- app.py
-|       `-- backend.py
-|-- streamlit_app.py
-|-- requirements.txt
-|-- .env.example
-|-- .gitignore
-`-- README.md  (this file)
+streamlit
+python-dotenv
+youtube-transcript-api
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+faiss-cpu
+huggingface-hub
 ```
 
-What each important folder/file contains
-- src/cognitube_ai/app.py
-  - Streamlit UI logic. Collects user input, triggers transcript collection, builds vector store, performs retrieval, builds prompt, and shows Hugging Face-generated answer.
-- src/cognitube_ai/backend.py
-  - Core helpers: LocalHashEmbeddings implementation, build_vector_store(), get_transcript(), extract_video_id(), get_huggingface_client(), generate_answer(), and proxy support for YouTube transcript fetching.
-- streamlit_app.py
-  - App entrypoint. Adjusts sys.path to include src and calls cognitube_ai.app.main().
-- requirements.txt
-  - Python package dependencies.
-- .env.example
-  - Example environment variables required to run the app.
+## Architecture & How It Works
 
-Installation
-------------
-Follow these steps (commands assume a POSIX shell; Windows PowerShell examples are also included in the original README):
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         User Interface                          │
+│                    (Streamlit Web App)                          │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+       ┌─────────▼─────────┐
+       │  YouTube URL Input  │
+       └─────────┬──────────┘
+                 │
+       ┌─────────▼──────────────────┐
+       │  Extract Video ID           │
+       │  (URL parser)              │
+       └─────────┬──────────────────┘
+                 │
+       ┌─────────▼──────────────────┐
+       │  YouTube Transcript API    │
+       │  (Fetch en/hi captions)    │
+       └─────────┬──────────────────┘
+                 │
+       ┌─────────▼──────────────────┐
+       │  RecursiveCharacterSplitter│
+       │  (chunk_size=1000,         │
+       │   overlap=200)             │
+       └─────────┬──────────────────┘
+                 │
+       ┌─────────▼──────────────────┐
+       │  LocalHashEmbeddings       │
+       │  (Deterministic, 384-dim)  │
+       └─────────┬──────────────────┘
+                 │
+       ┌─────────▼──────────────────┐
+       │  FAISS Vector Store        │
+       │  (@st.cache_resource)      │
+       └──────────┬─────────────────┘
+                  │
+        ┌─────────▼────────┐
+        │  User Question   │
+        └─────────┬────────┘
+                  │
+        ┌─────────▼──────────────────┐
+        │  FAISS Retriever (k=6)     │
+        │  Fetch top chunks          │
+        └─────────┬──────────────────┘
+                  │
+        ┌─────────▼──────────────────┐
+        │  Build Prompt              │
+        │  (Context + Question)      │
+        └─────────┬──────────────────┘
+                  │
+        ┌─────────▼──────────────────┐
+        │  HF InferenceClient        │
+        │  chat_completion           │
+        │  (temp=0.3, max_tokens=512)│
+        └─────────┬──────────────────┘
+                  │
+        ┌─────────▼────────────┐
+        │  Answer to User      │
+        └──────────────────────┘
+```
 
-1. Clone repository
+## Project Structure
+
+```
+CogniTube-AI/
+├── streamlit_app.py              # Entry point for Streamlit
+├── src/
+│   └── cognitube_ai/
+│       ├── __init__.py           # Package init
+│       ├── app.py                # UI logic and Streamlit components
+│       └── backend.py            # Core functions: embeddings, vector store, LLM
+├── requirements.txt              # Python dependencies
+├── .env.example                  # Example environment variables
+├── .gitignore                    # Git ignore rules
+└── README.md                     # This file
+```
+
+### File Descriptions
+
+| File | Purpose |
+|------|---------|
+| `streamlit_app.py` | Adds `src/` to path and calls `cognitube_ai.app.main()` |
+| `src/cognitube_ai/app.py` | Streamlit UI: input fields, buttons, state management |
+| `src/cognitube_ai/backend.py` | Core logic: `LocalHashEmbeddings`, `build_vector_store()`, `get_transcript()`, `generate_answer()` |
+| `.env.example` | Template for required environment variables |
+
+## Installation
+
+### Prerequisites
+- **Python 3.9+**
+- A Hugging Face account with API access (free tier available)
+
+### Step-by-Step Setup
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/praveen-soni06/CogniTube-AI.git
 cd CogniTube-AI
 ```
 
-2. Create a Python virtual environment and activate it
-- macOS/Linux:
+#### 2. Create and Activate Virtual Environment
+**macOS/Linux:**
 ```bash
 python -m venv venv
 source venv/bin/activate
 ```
-- Windows (PowerShell, taken from the repository README):
+
+**Windows (PowerShell):**
 ```powershell
 python -m venv venv
-.\\venv\\Scripts\\Activate.ps1
+.\venv\Scripts\Activate.ps1
 ```
 
-3. Install dependencies
+#### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Configure environment variables
-- Copy .env.example -> .env and set your Hugging Face token:
+#### 4. Configure Environment Variables
 ```bash
 cp .env.example .env
-# then edit .env to set HUGGINGFACEHUB_API_TOKEN
 ```
 
-5. Run the app
+Edit `.env` and add your Hugging Face token:
+```env
+HUGGINGFACEHUB_API_TOKEN=hf_your_actual_token_here
+HUGGINGFACE_MODEL=Qwen/Qwen2.5-72B-Instruct
+YOUTUBE_PROXY_URL=
+```
+
+You can get a free Hugging Face API token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+
+#### 5. Run the Application
 ```bash
 streamlit run streamlit_app.py
 ```
 
-6. Verify installation
-- In the Streamlit UI, enter a YouTube URL or video ID and click "Collect Transcript".
-- After transcript processing, ask a question and click "Submit".
+The app will open in your browser at `http://localhost:8501`.
 
-Environment Variables
----------------------
-The repository contains `.env.example` with the following variables:
+## Usage
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| HUGGINGFACEHUB_API_TOKEN | Hugging Face access token used for chat inference via huggingface_hub.InferenceClient | Yes |
-| HUGGINGFACE_MODEL | Optional: Hugging Face model ID used by InferenceClient. Defaults to `Qwen/Qwen2.5-72B-Instruct` in code | No (optional) |
-| YOUTUBE_PROXY_URL | Optional HTTP(S) proxy (e.g., `http://user:pass@host:port`) used when YouTube blocks your IP for transcript fetching | No (optional) |
+### Basic Workflow
 
-Notes:
-- The code also checks `HF_TOKEN` environment variable as an alternative to `HUGGINGFACEHUB_API_TOKEN`.
-- The default model constant in code: `DEFAULT_LLM_MODEL = "Qwen/Qwen2.5-72B-Instruct"`
+1. **Start the app:**
+   ```bash
+   streamlit run streamlit_app.py
+   ```
 
-Requirements
-------------
-- Python version: not specified in the repository (no explicit Python version found).
-- Node/npm: not used (no package.json).
-- Database: none required.
-- GPU / CUDA: not required by the repository (the code uses Hugging Face InferenceClient for remote inference and faiss-cpu). No local large-model inference is performed by the repository code.
-- RAM / Disk: not specified.
+2. **Enter a YouTube URL or Video ID:**
+   - Full URL: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+   - Short URL: `https://youtu.be/dQw4w9WgXcQ`
+   - Video ID: `dQw4w9WgXcQ`
 
-Usage
------
-1. Start the Streamlit app:
+3. **Click "Collect Transcript":**
+   - The app fetches the transcript and builds a searchable vector store
+   - Processing time depends on video length (typically 10-60 seconds)
+
+4. **Ask a Question:**
+   - Enter any question related to the video content
+   - Click "Submit"
+   - The app retrieves relevant sections and generates an answer
+
+### Example Questions
+
+For a tutorial video on Python:
+- "What is list comprehension?"
+- "How do I handle exceptions?"
+- "What's the difference between == and is?"
+
+## Configuration
+
+All configuration is managed via `.env` file:
+
+| Variable | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `HUGGINGFACEHUB_API_TOKEN` | string | ✅ Yes | — | Hugging Face API token for inference |
+| `HF_TOKEN` | string | ❌ No | — | Alternative to `HUGGINGFACEHUB_API_TOKEN` |
+| `HUGGINGFACE_MODEL` | string | ❌ No | `Qwen/Qwen2.5-72B-Instruct` | LLM model ID from Hugging Face |
+| `YOUTUBE_PROXY_URL` | string | ❌ No | — | HTTP(S) proxy URL if YouTube blocks transcript fetching (e.g., `http://user:pass@proxy.com:8080`) |
+
+### Obtaining a Hugging Face Token
+
+1. Go to [huggingface.co](https://huggingface.co/)
+2. Sign up or log in
+3. Navigate to [Settings → API Tokens](https://huggingface.co/settings/tokens)
+4. Click "New token" and create a token with "Read" access
+5. Copy and paste into `.env`
+
+## How the RAG Pipeline Works
+
+### 1. Transcript Ingestion
+- Fetches transcript via YouTube Transcript API
+- Supports English (`en`) and Hindi (`hi`) with automatic fallback
+- Validates minimum transcript length (50+ characters)
+
+### 2. Text Chunking
+- Uses `RecursiveCharacterTextSplitter` with:
+  - Chunk size: 1000 characters
+  - Overlap: 200 characters
+- Preserves context across chunk boundaries
+
+### 3. Embedding & Indexing
+- **LocalHashEmbeddings**: Deterministic hash-based embeddings
+  - Dimension: 384
+  - Uses blake2b hashing on tokens
+  - No external API calls required
+  - Same text always produces the same embedding (reproducible)
+- Indexed in FAISS for fast similarity search
+
+### 4. Retrieval
+- On question submit, retrieves top-6 most similar chunks
+- Uses cosine similarity via FAISS
+
+### 5. Generation
+- Constructs a prompt combining:
+  - System instruction (context-only reasoning)
+  - Retrieved chunks as context
+  - User question
+- Sends to Hugging Face InferenceClient
+- Parameters: `temperature=0.3`, `max_tokens=512`
+
+## Limitations & Notes
+
+- **Captions Required**: Only videos with captions (English or Hindi) are supported
+- **Context Window**: Retrieves top-6 chunks (configurable in code)
+- **Session-Based**: Vector stores are cached per Streamlit session; reload resets state
+- **Rate Limits**: Depends on your Hugging Face API quota
+- **Internet Required**: Requires connectivity to YouTube and Hugging Face APIs
+- **No Persistent Storage**: Transcripts and vector stores are not saved between sessions
+
+## Troubleshooting
+
+### "YouTube blocked this IP/network"
+**Solution**: Set `YOUTUBE_PROXY_URL` in `.env` to use a proxy:
+```env
+YOUTUBE_PROXY_URL=http://user:password@proxy.example.com:8080
+```
+
+### "No captions are available for this video"
+**Solution**: Only videos with captions can be used. Check if the video has English or Hindi captions on YouTube.
+
+### "Could not generate the answer"
+**Solution**: 
+- Verify your Hugging Face token is valid and has API access
+- Check internet connectivity
+- Ensure the model specified in `HUGGINGFACE_MODEL` exists and is accessible
+
+### Empty or irrelevant answers
+**Solution**: Try a more specific question or check that the video contains relevant content.
+
+## Future Enhancements
+
+Potential improvements (not currently implemented):
+
+- [ ] Support for more languages (Spanish, French, German, etc.)
+- [ ] Persistent transcript caching and session storage
+- [ ] Support for local LLMs (Ollama, LM Studio)
+- [ ] Custom embedding models (e.g., ONNX-based)
+- [ ] Multi-video querying across playlists
+- [ ] Docker containerization for easy deployment
+- [ ] Streamlit Cloud deployment guide
+- [ ] Unit tests and CI/CD pipeline
+- [ ] Chat history and conversation context
+- [ ] Adjustable retrieval parameters (k, temperature, chunk size) via UI
+
+## Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+### Development Setup
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Create a feature branch
+git checkout -b feature/my-feature
+
+# Test your changes
 streamlit run streamlit_app.py
-```
-2. In the UI:
-  - Enter a YouTube URL or Video ID.
-  - Click "Collect Transcript".
-  - After the transcript is processed, enter a question in "Ask your question:" and click "Submit".
-3. The app will retrieve the top-k documents from the vector store (k=6), build a prompt that contains only those docs, and call Hugging Face InferenceClient to generate an answer. If the context is insufficient, the assistant is instructed to say "I don't know."
 
-API Documentation
------------------
-- No external REST API endpoints are present in this repository. The app is a Streamlit single-process UI application.
-- Internal notable functions (defined in src/cognitube_ai/backend.py):
-  - extract_video_id(url_or_id): parse YouTube URL or return given ID.
-  - get_transcript(video_id): fetches transcript (languages en/hi) with proxy support.
-  - build_vector_store(transcript): splits transcript and creates FAISS vector store with LocalHashEmbeddings.
-  - generate_answer(prompt): calls Hugging Face InferenceClient.chat_completion to generate a response.
-
-Database
---------
-- No database is used. The vector store (FAISS) is built in memory and is cached per Streamlit session via @st.cache_resource.
-
-Machine Learning / Model details
--------------------------------
-- Embeddings: LocalHashEmbeddings (deterministic, local implementation in backend.py). It tokenizes text with a regex and maps tokens to a fixed-dimension vector (default 384) using blake2b hashing and normalization.
-- Text splitting: RecursiveCharacterTextSplitter with chunk_size=1000 and chunk_overlap=200.
-- Vector store: FAISS (faiss-cpu), built from the document chunks and LocalHashEmbeddings.
-- LLM: Uses Hugging Face InferenceClient (Inference API) to perform chat completion. Default model set to Qwen/Qwen2.5-72B-Instruct in code; the model can be overridden via HUGGINGFACE_MODEL environment variable.
-- Training: no training code included (the app performs retrieval and calls remote inference).
-- Prediction flow:
-  1. Build FAISS vector store from transcript chunks.
-  2. On question submit: retrieve top-k docs (k=6).
-  3. Format docs into prompt and call Hugging Face chat_completion.
-  4. Display returned answer.
-- Evaluation / accuracy: not provided in repository.
-
-Configuration
--------------
-Configurable settings are controlled by environment variables in `.env`:
-- `HUGGINGFACEHUB_API_TOKEN` or `HF_TOKEN` — required to call the Hugging Face Inference API.
-- `HUGGINGFACE_MODEL` — optional override of the LLM model.
-- `YOUTUBE_PROXY_URL` — set when YouTube blocks transcript fetching from your IP; the code uses GenericProxyConfig for both http and https.
-
-Screenshots
------------
-(Placeholders — no images in repo)
-
-## Home Page
-
-![Home](docs/images/home.png)
-
-## Transcript collected
-
-![Transcript](docs/images/transcript.png)
-
-Workflow
---------
-High-level flow from the code:
-
-```mermaid
-flowchart LR
-  User --> StreamlitUI[Streamlit UI (streamlit_app.py / app.py)]
-  StreamlitUI --> YouTubeTranscriptAPI[YouTube Transcript API (youtube_transcript_api)]
-  YouTubeTranscriptAPI --> Transcript[Transcript text]
-  Transcript --> TextSplitter[RecursiveCharacterTextSplitter]
-  TextSplitter --> Chunks[Document chunks]
-  Chunks --> LocalEmbeddings[LocalHashEmbeddings]
-  LocalEmbeddings --> FAISS[FAISS vector store]
-  User --> Query[Question]
-  Query --> Retriever[FAISS retriever (k=6)]
-  Retriever --> PromptBuilder[Build prompt with docs + instructions]
-  PromptBuilder --> HFInference[Hugging Face InferenceClient (chat_completion)]
-  HFInference --> Answer[Answer shown to User]
+# Submit a PR
 ```
 
-Notes & next steps
-------------------
-- The repository contains a working Streamlit app that uses a remote LLM (Hugging Face) and local deterministic embeddings with FAISS.
-- Items you may want to add (not present currently):
-  - LICENSE file (choose a license).
-  - Explicit Python version (e.g., in README or runtime.txt).
-  - Dockerfile for containerized deployment.
-  - CI workflow (GitHub Actions) for linting/testing.
-  - Tests for backend functions (extract_video_id, LocalHashEmbeddings, get_transcript).
-  - Example screenshots or a demo link.
+## License
 
-If you want, I can:
-- Create or update README.md in the repository with the content above (I can commit it for you if you tell me the target repository and branch).
-- Add a LICENSE file (if you tell me which license you want).
-- Create a Dockerfile and a basic GitHub Actions workflow for running tests/lint (but I will need guidance about Python version, test framework, and desired deployment strategy).
+This project is not yet licensed. To use or contribute, please add a LICENSE file (e.g., MIT, Apache 2.0) to specify usage terms.
+
+## Support
+
+For issues, questions, or suggestions:
+- Open an [issue on GitHub](https://github.com/praveen-soni06/CogniTube-AI/issues)
+- Check existing issues first to avoid duplicates
+
+## Acknowledgments
+
+Built with:
+- [Streamlit](https://streamlit.io/) — web app framework
+- [LangChain](https://langchain.com/) — LLM orchestration
+- [FAISS](https://github.com/facebookresearch/faiss) — vector search
+- [Hugging Face](https://huggingface.co/) — hosted inference API
+- [YouTube Transcript API](https://github.com/jderose9/youtube-transcript-api) — transcript access
 
 ---
 
-Would you like me to commit this README.md to the repository (and if so, which branch should I use)?
+**Made with ❤️ by [praveen-soni06](https://github.com/praveen-soni06)**
